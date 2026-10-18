@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
+<title>家里的事 · 打卡</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    color: #1c1c1c;
+    background: #fff;
+    padding-bottom: calc(104px + env(safe-area-inset-bottom));
+  }
+
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: #fff;
+    border-bottom: 1px solid #e8e5e0;
+    padding: 12px 18px 10px;
+  }
+  .date { font-size: 15px; letter-spacing: .3px; }
+  .headline { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 4px; }
+  .prog { font-size: 13px; color: #6c6862; }
+  .prog b { font-size: 15px; color: #1c1c1c; font-weight: 600; }
+  .overdue { font-size: 12px; color: #a4453a; }
+
+  section { border-top: 1px solid #e8e5e0; }
+  section:first-of-type { border-top: none; }
+  h2 {
+    margin: 0; padding: 18px 18px 6px;
+    font-size: 13px; font-weight: 600; letter-spacing: 1.6px; color: #6c6862;
+  }
+  h2 span { display: block; margin-top: 3px; font-size: 12px; font-weight: 400; letter-spacing: 0; color: #a8a29a; }
+
+  .row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 18px;
+    border-top: 1px solid #f1efeb;
+    cursor: pointer; user-select: none;
+  }
+  .row:first-of-type { border-top: none; }
+  .box {
+    flex: 0 0 22px; width: 22px; height: 22px;
+    border: 1.5px solid #bcb6ad;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 14px; line-height: 1;
+  }
+  .txt { flex: 1 1 auto; min-width: 0; }
+  .name { font-size: 16px; }
+  .note { font-size: 12px; color: #9a948c; margin-top: 2px; }
+  .side { flex: 0 0 auto; text-align: right; font-size: 12px; color: #9a948c; }
+  .tag { display: block; margin-top: 3px; font-size: 11px; color: #a4453a; }
+
+  .row.done .box { background: #1c1c1c; border-color: #1c1c1c; }
+  .row.done .name { color: #a8a29a; text-decoration: line-through; }
+  .row.done .note { color: #bdb7ae; }
+
+  footer {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    background: #fff; border-top: 1px solid #e8e5e0;
+    padding: 10px 18px calc(10px + env(safe-area-inset-bottom));
+    display: flex; gap: 10px;
+  }
+  button {
+    font: inherit; font-size: 15px; border: 1px solid #1c1c1c; border-radius: 0;
+    padding: 12px 16px; background: #1c1c1c; color: #fff;
+  }
+  footer button { flex: 1 1 0; padding: 12px 8px; }
+  button.plain {
+    background: #fff; color: #1c1c1c; border-color: #ded9d1;
+  }
+  .linklike {
+    display: inline-block; margin-top: 10px; padding: 0;
+    background: none; border: none; color: #8a847c;
+    font-size: 12px; text-decoration: underline;
+  }
+
+  .foot-note { padding: 16px 18px 8px; font-size: 12px; color: #a8a29a; }
+  .foot-note.warn { color: #a4453a; }
+  .foot-spacer { height: 24px; }
+
+  .sheet {
+    position: fixed; inset: 0; z-index: 40;
+    background: #fff; display: flex; flex-direction: column;
+    padding: calc(12px + env(safe-area-inset-top)) 18px calc(12px + env(safe-area-inset-bottom));
+  }
+  .sheet[hidden] { display: none; }
+  .sheetHead { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .sheetHead b { font-size: 16px; font-weight: 600; }
+  .sheetHead span { font-size: 14px; color: #6c6862; }
+  #reportText {
+    flex: 1 1 auto; width: 100%; resize: none;
+    font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: #1c1c1c; background: #faf9f7;
+    border: 1px solid #e8e5e0; border-radius: 0;
+    padding: 14px;
+  }
+  .sheetBtns { display: flex; gap: 10px; margin-top: 12px; }
+  .sheetBtns button { flex: 1 1 0; }
+
+  #histBody { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .hgroup { padding: 16px 0 4px; font-size: 13px; font-weight: 600; letter-spacing: 1.4px; color: #6c6862; }
+  .hgroup:first-child { padding-top: 0; }
+  .hline {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 9px 0; border-top: 1px solid #f1efeb; font-size: 14px;
+  }
+  .hline .l { flex: 1 1 auto; }
+  .hline .r { flex: 0 0 auto; font-size: 13px; color: #6c6862; }
+  .hline .sub { display: block; margin-top: 2px; font-size: 12px; color: #a8a29a; }
+  .hline .miss { color: #a4453a; }
+  .hnote { padding: 12px 0 0; font-size: 12px; color: #a8a29a; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="date" id="dateLine">—</div>
+  <div class="headline">
+    <div class="prog" id="progText">每日 0/7</div>
+    <div class="overdue" id="overdueText"></div>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<footer>
+  <button id="reportBtn">生成今天的汇报</button>
+  <button class="plain" id="histBtn">历史</button>
+</footer>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheetHead">
+    <b>今天的汇报</b>
+    <span id="closeSheet">关闭</span>
+  </div>
+  <textarea id="reportText" readonly></textarea>
+  <div class="sheetBtns">
+    <button id="copyBtn">复制文字</button>
+  </div>
+</div>
+
+<div class="sheet" id="hist" hidden>
+  <div class="sheetHead">
+    <b>历史记录</b>
+    <span id="closeHist">关闭</span>
+  </div>
+  <div id="histBody"></div>
+  <div class="sheetBtns">
+    <button id="copyHistBtn">复制这段时间的记录</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var TASKS = [
+    { id: 'floor',      g: 'daily', name: '地面清洁',   note: '每天清理大厅和房间地面的猫毛' },
+    { id: 'study',      g: 'daily', name: '书房卫生',   note: '每天检查并打扫书房的卫生情况' },
+    { id: 'cup',        g: 'daily', name: '水杯消毒',   note: '孩子的水杯每天用开水消毒' },
+    { id: 'supply',     g: 'daily', name: '日用品补充', note: '每天检查纸巾、卫生纸够不够，及时补充' },
+    { id: 'water',      g: 'daily', name: '饮水补充',   note: '卧室冰箱里的矿泉水每天检查并添加' },
+    { id: 'laundry',    g: 'daily', name: '洗衣注意',   note: '洗衣服前确认口袋里没有东西，注意及时处理避免衣服有霉味' },
+    { id: 'fridge',     g: 'daily', name: '冰箱清洁',   note: '定时检查冰箱的门把手和内部积水，保持干净' },
+
+    { id: 'litter',     g: 'every', days: 2,  name: '猫砂与垃圾', note: '猫砂、垃圾袋每两天更换一次' },
+    { id: 'turtle',     g: 'every', days: 3,  name: '乌龟缸清理', note: '乌龟缸每三天清理一次' },
+
+    { id: 'door',       g: 'week',  days: 7,  name: '擦拭大门',   note: '大门每个礼拜擦一次' },
+    { id: 'kitchen',    g: 'week',  days: 7,  name: '厨房器具',   note: '电饭锅、蒸锅、炒锅等厨房器具每周清洗一次' },
+    { id: 'bedding',    g: 'week',  days: 10, name: '更换床单',   note: '床单每 10 天换一次，并熨烫平整' },
+
+    { id: 'litterbox',  g: 'month', days: 30, name: '清洗猫砂盆', note: '非智能的猫砂盆每个月清洗一次' },
+    { id: 'dryer',      g: 'month', days: 30, name: '清理干衣机', note: '干衣机每个月清理一次' }
+  ];
+
+  var GROUPS = [
+    { key: 'daily', title: '每日必做',            sub: '每天重新开始' },
+    { key: 'every', title: '每 2～3 天一次',       sub: '按上次做的时间算' },
+    { key: 'week',  title: '每周 / 每 10 天一次',  sub: '按上次做的时间算' },
+    { key: 'month', title: '每月一次',            sub: '按上次做的时间算' }
+  ];
+
+  var KEY = 'home-check-v2';
+  var KEEP_DAYS = 200;
+  var HIST_DAYS = 30;
+  var RECENT_DAYS = 14;
+
+  var store = null;
+  try {
+    window.localStorage.setItem('__probe__', '1');
+    window.localStorage.removeItem('__probe__');
+    store = window.localStorage;
+  } catch (e) { store = null; }
+
+  var state = { log: {} };
+  if (store) {
+    try {
+      var raw = store.getItem(KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && parsed.log && typeof parsed.log === 'object') { state.log = parsed.log; }
+      }
+    } catch (e) {}
+  }
+
+  function save() {
+    if (!store) { return; }
+    try { store.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function dateStr(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function todayStr() { return dateStr(new Date()); }
+  function shiftDay(t, n) {
+    var d = new Date(t + 'T00:00:00');
+    d.setDate(d.getDate() + n);
+    return dateStr(d);
+  }
+  function nowHM() {
+    var d = new Date();
+    return pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function md(s) {
+    if (!s) { return ''; }
+    var p = s.split('-');
+    return (parseInt(p[1], 10)) + '月' + (parseInt(p[2], 10)) + '日';
+  }
+  function dow(s) {
+    var d = new Date(s + 'T00:00:00');
+    return '星期' + '日一二三四五六'[d.getDay()];
+  }
+  function diffDays(a, b) {
+    if (!a) { return null; }
+    return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
+  }
+  function ago(diff) {
+    if (diff === null) { return ''; }
+    if (diff <= 0) { return '今天'; }
+    if (diff === 1) { return '昨天'; }
+    return diff + ' 天前';
+  }
+  function taskById(id) {
+    for (var i = 0; i < TASKS.length; i++) { if (TASKS[i].id === id) { return TASKS[i]; } }
+    return null;
+  }
+  function dayLog(d) {
+    var rec = state.log[d];
+    return (rec && typeof rec === 'object') ? rec : {};
+  }
+  function isChecked(id, d) { return !!dayLog(d)[id]; }
+  function checkedAt(id, d) { return dayLog(d)[id] || ''; }
+  function lastDone(id, t) {
+    var keys = Object.keys(state.log);
+    var best = null;
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      if (k > t) { continue; }
+      if (dayLog(k)[id] && (!best || k > best)) { best = k; }
+    }
+    return best;
+  }
+  function doneDates(id, dates) {
+    var out = [];
+    for (var i = 0; i < dates.length; i++) {
+      if (dayLog(dates[i])[id]) { out.push(dates[i]); }
+    }
+    return out;
+  }
+  function isDue(task, t) {
+    if (task.g === 'daily') { return !isChecked(task.id, t); }
+    var last = lastDone(task.id, t);
+    if (!last) { return true; }
+    var d = diffDays(last, t);
+    return d !== null && d >= task.days;
+  }
+  function prune() {
+    var cutoff = shiftDay(todayStr(), -KEEP_DAYS);
+    var keys = Object.keys(state.log);
+    var changed = false;
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i] < cutoff) { delete state.log[keys[i]]; changed = true; }
+    }
+    if (changed) { save(); }
+  }
+
+  function toggle(task) {
+    var t = todayStr();
+    var rec = state.log[t];
+    if (!rec || typeof rec !== 'object') { rec = {}; state.log[t] = rec; }
+    if (rec[task.id]) {
+      delete rec[task.id];
+      if (!Object.keys(rec).length) { delete state.log[t]; }
+    } else {
+      rec[task.id] = nowHM();
+    }
+    prune();
+    save();
+    render();
+  }
+
+  function renderRows() {
+    var t = todayStr();
+    var app = document.getElementById('app');
+    app.innerHTML = '';
+
+    GROUPS.forEach(function (grp) {
+      var items = TASKS.filter(function (x) { return x.g === grp.key; });
+      if (!items.length) { return; }
+
+      var sec = document.createElement('section');
+      var h = document.createElement('h2');
+      h.textContent = grp.title + '（' + items.length + ' 项）';
+      var s = document.createElement('span');
+      s.textContent = grp.sub;
+      h.appendChild(s);
+      sec.appendChild(h);
+
+      items.forEach(function (task) {
+        var last = lastDone(task.id, t);
+        var diff = last ? diffDays(last, t) : null;
+        var doneToday = isChecked(task.id, t);
+        var due = isDue(task, t);
+
+        var row = document.createElement('div');
+        row.className = 'row' + (doneToday ? ' done' : '');
+
+        var box = document.createElement('div');
+        box.className = 'box';
+        box.textContent = doneToday ? '✓' : '';
+        row.appendChild(box);
+
+        var txt = document.createElement('div');
+        txt.className = 'txt';
+        var nm = document.createElement('div');
+        nm.className = 'name';
+        nm.textContent = task.name;
+        var nt = document.createElement('div');
+        nt.className = 'note';
+        nt.textContent = task.note;
+        txt.appendChild(nm);
+        txt.appendChild(nt);
+        row.appendChild(txt);
+
+        var side = document.createElement('div');
+        side.className = 'side';
+        if (task.g === 'daily') {
+          if (doneToday) { side.textContent = checkedAt(task.id, t); }
+        } else if (doneToday) {
+          side.textContent = '今天做的';
+        } else if (last) {
+          side.textContent = '上次 ' + md(last) + ' · ' + ago(diff);
+        } else {
+          side.textContent = '还没记录过';
+        }
+        row.appendChild(side);
+
+        if (!doneToday && due && task.g !== 'daily') {
+          var tag = document.createElement('span');
+          tag.className = 'tag';
+          tag.textContent = '该做了';
+          side.appendChild(tag);
+        }
+
+        row.addEventListener('click', function () { toggle(task); });
+        sec.appendChild(row);
+      });
+
+      app.appendChild(sec);
+    });
+
+    var note = document.createElement('div');
+    note.className = 'foot-note' + (store ? '' : ' warn');
+    note.textContent = store
+      ? '记录存在这台手机的浏览器里，不会上传到任何地方。'
+      : '这台设备没能开启本地保存，关掉页面记录会清空。';
+    app.appendChild(note);
+
+    if (store) {
+      var clearBtn = document.createElement('button');
+      clearBtn.className = 'linklike';
+      clearBtn.textContent = '清空今天勾的';
+      clearBtn.addEventListener('click', function () {
+        if (!window.confirm('把今天勾的全部清空？（以前日子的记录不动）')) { return; }
+        delete state.log[todayStr()];
+        save();
+        render();
+      });
+      app.appendChild(clearBtn);
+    }
+
+    var spacer = document.createElement('div');
+    spacer.className = 'foot-spacer';
+    app.appendChild(spacer);
+  }
+
+  function renderHead() {
+    var t = todayStr();
+    document.getElementById('dateLine').textContent = dateLineText(t);
+
+    var daily = TASKS.filter(function (x) { return x.g === 'daily'; });
+    var doneCount = daily.filter(function (x) { return isChecked(x.id, t); }).length;
+    document.getElementById('progText').innerHTML = '每日 <b>' + doneCount + '/' + daily.length + '</b>';
+
+    var dueOthers = TASKS.filter(function (x) { return x.g !== 'daily' && isDue(x, t); }).length;
+    document.getElementById('overdueText').textContent = dueOthers ? ('另有 ' + dueOthers + ' 项到期') : '';
+  }
+
+  function dateLineText(t) {
+    var p = t.split('-');
+    return p[0] + ' 年 ' + parseInt(p[1], 10) + ' 月 ' + parseInt(p[2], 10) + ' 日 · ' + dow(t);
+  }
+
+  function render() {
+    renderHead();
+    renderRows();
+  }
+
+  function dailyDoneCount(t) {
+    var daily = TASKS.filter(function (x) { return x.g === 'daily'; });
+    var n = 0;
+    daily.forEach(function (x) { if (isChecked(x.id, t)) { n++; } });
+    return n;
+  }
+  function otherDoneOn(t) {
+    return TASKS.filter(function (x) {
+      return x.g !== 'daily' && isChecked(x.id, t);
+    });
+  }
+
+  function buildReport() {
+    var t = todayStr();
+    var lines = [];
+    lines.push('家里的事 · 打卡记录');
+    lines.push(t + ' ' + dow(t));
+    lines.push('');
+
+    GROUPS.forEach(function (grp) {
+      var items = TASKS.filter(function (x) { return x.g === grp.key; });
+      var done = [];
+      var todo = [];
+      items.forEach(function (task) {
+        if (task.g === 'daily') {
+          if (isChecked(task.id, t)) { done.push('✓ ' + task.name + '  ' + checkedAt(task.id, t)); }
+          else { todo.push('· ' + task.name + '（未做）'); }
+        } else {
+          var last = lastDone(task.id, t);
+          var diff = last ? diffDays(last, t) : null;
+          if (isChecked(task.id, t)) {
+            done.push('✓ ' + task.name + '  今天做的');
+          } else if (isDue(task, t)) {
+            todo.push('· ' + task.name + '（' + (last ? '上次 ' + md(last) + '，已 ' + diff + ' 天' : '还没记录过') + '）');
+          } else {
+            done.push('· ' + task.name + '  还不用做（上次 ' + md(last) + '，' + ago(diff) + '）');
+          }
+        }
+      });
+      lines.push('【' + grp.title + '】');
+      done.forEach(function (x) { lines.push(x); });
+      todo.forEach(function (x) { lines.push(x); });
+      lines.push('');
+    });
+
+    var daily = TASKS.filter(function (x) { return x.g === 'daily'; });
+    lines.push('每日必做 ' + dailyDoneCount(t) + '/' + daily.length + ' 完成。');
+    lines.push('记录时间 ' + nowHM());
+    return lines.join('\n');
+  }
+
+  function buildHistoryText() {
+    var t = todayStr();
+    var span = [];
+    for (var i = HIST_DAYS - 1; i >= 0; i--) { span.push(shiftDay(t, -i)); }
+    var recorded = span.filter(function (d) { return Object.keys(dayLog(d)).length > 0; });
+    var lines = [];
+    lines.push('家里的事 · 最近 ' + HIST_DAYS + ' 天记录');
+    lines.push('（' + md(span[0]) + ' 到 ' + md(t) + '）');
+    lines.push('');
+
+    lines.push('【每日必做：各做了多少天】');
+    TASKS.filter(function (x) { return x.g === 'daily'; }).forEach(function (task) {
+      var done = doneDates(task.id, span);
+      var missed = recorded.filter(function (d) { return !dayLog(d)[task.id]; });
+      var line = task.name + '  ' + done.length + '/' + recorded.length + ' 天';
+      if (missed.length) { line += '   漏了：' + missed.slice(-4).map(md).join('、') + (missed.length > 4 ? ' 等' : ''); }
+      lines.push(line);
+    });
+    lines.push('');
+
+    lines.push('【按周期做的：做过的次数和日期】');
+    TASKS.filter(function (x) { return x.g !== 'daily'; }).forEach(function (task) {
+      var done = doneDates(task.id, span);
+      var line = task.name + '  做了 ' + done.length + ' 次';
+      if (done.length) { line += '   最近：' + done.slice(-3).reverse().map(md).join('、'); }
+      lines.push(line);
+    });
+    lines.push('');
+
+    lines.push('【最近 ' + RECENT_DAYS + ' 天逐日】');
+    for (var k = RECENT_DAYS - 1; k >= 0; k--) {
+      var d = shiftDay(t, -k);
+      var rec = dayLog(d);
+      if (!Object.keys(rec).length) { lines.push(md(d) + ' ' + dow(d) + '   无记录'); continue; }
+      var line2 = md(d) + ' ' + dow(d) + '   每日 ' + dailyDoneCount(d) + '/' + TASKS.filter(function (x) { return x.g === 'daily'; }).length;
+      var extra = otherDoneOn(d).map(function (x) { return x.name; });
+      if (extra.length) { line2 += '   另做了：' + extra.join('、'); }
+      var miss = TASKS.filter(function (x) { return x.g === 'daily' && !rec[x.id]; }).map(function (x) { return x.name; });
+      if (miss.length) { line2 += '   漏：' + miss.join('、'); }
+      lines.push(line2);
+    }
+
+    lines.push('');
+    lines.push('这 ' + HIST_DAYS + ' 天里有 ' + (HIST_DAYS - recorded.length) + ' 天完全没有记录。');
+    return lines.join('\n');
+  }
+
+  function buildHistoryView() {
+    var t = todayStr();
+    var span = [];
+    for (var i = HIST_DAYS - 1; i >= 0; i--) { span.push(shiftDay(t, -i)); }
+    var recorded = span.filter(function (d) { return Object.keys(dayLog(d)).length > 0; });
+    var body = document.getElementById('histBody');
+    body.innerHTML = '';
+
+    function group(title) {
+      var g = document.createElement('div');
+      g.className = 'hgroup';
+      g.textContent = title;
+      body.appendChild(g);
+    }
+    function line(left, right, sub, subWarn) {
+      var row = document.createElement('div');
+      row.className = 'hline';
+      var l = document.createElement('div');
+      l.className = 'l';
+      l.textContent = left;
+      if (sub) {
+        var sp = document.createElement('span');
+        sp.className = 'sub' + (subWarn ? ' miss' : '');
+        sp.textContent = sub;
+        l.appendChild(sp);
+      }
+      var r = document.createElement('div');
+      r.className = 'r';
+      r.textContent = right;
+      row.appendChild(l);
+      row.appendChild(r);
+      body.appendChild(row);
+    }
+
+    group('最近 ' + HIST_DAYS + ' 天 · 每日必做');
+    TASKS.filter(function (x) { return x.g === 'daily'; }).forEach(function (task) {
+      var done = doneDates(task.id, span);
+      var missed = recorded.filter(function (d) { return !dayLog(d)[task.id]; });
+      line(task.name,
+        done.length + '/' + recorded.length + ' 天',
+        missed.length ? ('漏了：' + missed.slice(-4).map(md).join('、') + (missed.length > 4 ? ' 等' : '')) : '没有漏',
+        missed.length > 0);
+    });
+
+    group('最近 ' + HIST_DAYS + ' 天 · 按周期做的');
+    TASKS.filter(function (x) { return x.g !== 'daily'; }).forEach(function (task) {
+      var done = doneDates(task.id, span);
+      line(task.name,
+        '做了 ' + done.length + ' 次',
+        done.length ? ('最近：' + done.slice(-3).reverse().map(md).join('、')) : '这段时间没记录',
+        false);
+    });
+
+    group('最近 ' + RECENT_DAYS + ' 天 · 逐日');
+    for (var k = RECENT_DAYS - 1; k >= 0; k--) {
+      var d = shiftDay(t, -k);
+      var rec = dayLog(d);
+      var dailyTotal = TASKS.filter(function (x) { return x.g === 'daily'; }).length;
+      if (!Object.keys(rec).length) {
+        line(md(d) + ' ' + dow(d), '无记录', '', true);
+        continue;
+      }
+      var miss = TASKS.filter(function (x) { return x.g === 'daily' && !rec[x.id]; }).map(function (x) { return x.name; });
+      var extra = otherDoneOn(d).map(function (x) { return x.name; });
+      var subs = [];
+      if (extra.length) { subs.push('另做了：' + extra.join('、')); }
+      if (miss.length) { subs.push('漏：' + miss.join('、')); }
+      line(md(d) + ' ' + dow(d), '每日 ' + dailyDoneCount(d) + '/' + dailyTotal, subs.join('    '), miss.length > 0);
+    }
+
+    var note = document.createElement('div');
+    note.className = 'hnote';
+    note.textContent = '这 ' + HIST_DAYS + ' 天里有 ' + (HIST_DAYS - recorded.length) + ' 天完全没有记录。记录存在这台手机的浏览器里，换手机或清掉浏览器数据就会丢。';
+    body.appendChild(note);
+  }
+
+  function copyFrom(textareaId, btn) {
+    var ta = document.getElementById(textareaId);
+    if (ta) {
+      ta.select();
+      ta.setSelectionRange(0, 99999);
+    }
+    var text = ta ? ta.value : '';
+    var fallback = false;
+    try { fallback = document.execCommand('copy'); } catch (e) { fallback = false; }
+    function done(ok) {
+      btn.textContent = ok ? '已复制' : '请长按文字选择复制';
+      setTimeout(function () { btn.textContent = btn.dataset.label || '复制'; }, 2000);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText && text) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(fallback); });
+    } else {
+      done(fallback);
+    }
+  }
+
+  document.getElementById('reportBtn').addEventListener('click', function () {
+    document.getElementById('reportText').value = buildReport();
+    document.getElementById('sheet').hidden = false;
+  });
+  document.getElementById('closeSheet').addEventListener('click', function () {
+    document.getElementById('sheet').hidden = true;
+  });
+  var copyBtn = document.getElementById('copyBtn');
+  copyBtn.dataset.label = '复制文字';
+  copyBtn.addEventListener('click', function () { copyFrom('reportText', copyBtn); });
+
+  document.getElementById('histBtn').addEventListener('click', function () {
+    buildHistoryView();
+    document.getElementById('hist').hidden = false;
+  });
+  document.getElementById('closeHist').addEventListener('click', function () {
+    document.getElementById('hist').hidden = true;
+  });
+  var copyHistBtn = document.getElementById('copyHistBtn');
+  copyHistBtn.dataset.label = '复制这段时间的记录';
+  copyHistBtn.addEventListener('click', function () {
+    var text = buildHistoryText();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        copyHistBtn.textContent = '已复制';
+        setTimeout(function () { copyHistBtn.textContent = copyHistBtn.dataset.label; }, 2000);
+      }, function () {
+        copyHistBtn.textContent = '复制失败，请截图';
+        setTimeout(function () { copyHistBtn.textContent = copyHistBtn.dataset.label; }, 2500);
+      });
+    } else {
+      copyHistBtn.textContent = '请截图保存';
+      setTimeout(function () { copyHistBtn.textContent = copyHistBtn.dataset.label; }, 2500);
+    }
+  });
+
+  prune();
+  render();
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) { render(); }
+  });
+})();
+</script>
+</body>
+</html>
