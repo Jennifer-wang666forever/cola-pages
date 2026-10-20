@@ -160,9 +160,11 @@
 (function () {
   var TASKS = [
     { id: 'floor',      g: 'daily', name: '地面清洁',   note: '每天清理大厅和房间地面的猫毛' },
+    { id: 'hair2',      g: 'daily', name: '晚上 19:00 猫毛复查', note: '每天晚上 19:00 第二次检查女主人屋内地上是否有毛团' },
     { id: 'study',      g: 'daily', name: '书房卫生',   note: '每天检查并打扫书房的卫生情况' },
     { id: 'cup',        g: 'daily', name: '水杯消毒',   note: '孩子的水杯每天用开水消毒' },
     { id: 'supply',     g: 'daily', name: '日用品补充', note: '每天检查纸巾、卫生纸够不够，及时补充' },
+    { id: 'bins',       g: 'daily', name: '所有垃圾桶', note: '每天检查家里所有的垃圾桶，满了就清' },
     { id: 'water',      g: 'daily', name: '饮水补充',   note: '卧室冰箱里的矿泉水每天检查并添加' },
     { id: 'laundry',    g: 'daily', name: '洗衣注意',   note: '洗衣服前确认口袋里没有东西，注意及时处理避免衣服有霉味' },
     { id: 'fridge',     g: 'daily', name: '冰箱清洁',   note: '定时检查冰箱的门把手和内部积水，保持干净' },
@@ -172,6 +174,8 @@
 
     { id: 'door',       g: 'week',  days: 7,  name: '擦拭大门',   note: '大门每个礼拜擦一次' },
     { id: 'kitchen',    g: 'week',  days: 7,  name: '厨房器具',   note: '电饭锅、蒸锅、炒锅等厨房器具每周清洗一次' },
+    { id: 'pots',       g: 'week',  days: 7,  name: '清洗锅具',   note: '锅具每周清洗一次' },
+    { id: 'carpet',     g: 'week',  days: 7,  name: '孩子卫生间地毯', note: '孩子卫生间的地毯每周更换一次' },
     { id: 'bedding',    g: 'week',  days: 10, name: '更换床单',   note: '床单每 10 天换一次，并熨烫平整' },
 
     { id: 'litterbox',  g: 'month', days: 30, name: '清洗猫砂盆', note: '非智能的猫砂盆每个月清洗一次' },
